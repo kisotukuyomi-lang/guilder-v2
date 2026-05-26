@@ -1,122 +1,104 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { useCallback, useState } from 'react'
+import { LoadScript } from '@react-google-maps/api'
+import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { ThemeProvider } from './contexts/ThemeContext'
+import { TabBar, type TabId } from './components/TabBar'
+import { useRecords } from './hooks/useRecords'
+import { AuthScreen } from './screens/AuthScreen'
+import { CreateRecordScreen } from './screens/CreateRecordScreen'
+import { MapScreen } from './screens/MapScreen'
+import { RecordsScreen } from './screens/RecordsScreen'
 
-function App() {
-  const [count, setCount] = useState(0)
+function AppShell() {
+  const { user, loading, signOut } = useAuth()
+  const { records, loading: recordsLoading, createRecord, fetchRecords } = useRecords()
+  const [activeTab, setActiveTab] = useState<TabId>('map')
+  const [showCreate, setShowCreate] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const mapsKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
 
-  return (
+  const handleSave = useCallback(
+    async (payload: Parameters<typeof createRecord>[0]) => {
+      await createRecord(payload)
+    },
+    [createRecord],
+  )
+
+  if (loading) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <p className="text-sm text-gray-500">読み込み中...</p>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return <AuthScreen />
+  }
+
+  const content = (
     <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+      <main className="relative h-full overflow-hidden">
+        {activeTab === 'map' ? (
+          <MapScreen records={records} onMenuClick={() => setMenuOpen(true)} />
+        ) : (
+          <RecordsScreen records={records} loading={recordsLoading} />
+        )}
+      </main>
 
-      <div className="ticks"></div>
+      <TabBar
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        onCreate={() => setShowCreate(true)}
+      />
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+      {showCreate && (
+        <CreateRecordScreen
+          onClose={() => setShowCreate(false)}
+          onSaved={() => void fetchRecords()}
+          onSave={handleSave}
+        />
+      )}
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
+      {menuOpen && (
+        <div className="fixed inset-0 z-50 flex">
+          <button
+            type="button"
+            className="flex-1 bg-black/40"
+            onClick={() => setMenuOpen(false)}
+            aria-label="Close menu"
+          />
+          <aside className="w-64 bg-guilder-bg p-6 shadow-xl dark:bg-guilder-dark-bg">
+            <h2 className="mb-6 text-lg font-bold tracking-[0.2em] text-gold">GUILDER</h2>
+            <p className="mb-4 truncate text-sm text-gray-500">{user.email}</p>
+            <button
+              type="button"
+              onClick={() => void signOut()}
+              className="w-full rounded-xl border border-guilder-border py-2 text-sm dark:border-guilder-dark-border"
+            >
+              ログアウト
+            </button>
+          </aside>
+        </div>
+      )}
     </>
   )
+
+  if (mapsKey) {
+    return <LoadScript googleMapsApiKey={mapsKey}>{content}</LoadScript>
+  }
+
+  return content
 }
 
-export default App
+export default function App() {
+  return (
+    <ThemeProvider>
+      <AuthProvider>
+        <div className="mx-auto h-full max-w-lg">
+          <AppShell />
+        </div>
+      </AuthProvider>
+    </ThemeProvider>
+  )
+}
