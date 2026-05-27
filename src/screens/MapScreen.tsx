@@ -19,13 +19,13 @@ const goldPinIcon =
 interface MapScreenProps {
   records: Record[]
   onMenuClick?: () => void
+  hasMapsApiKey: boolean
 }
 
-export function MapScreen({ records, onMenuClick }: MapScreenProps) {
+export function MapScreen({ records, onMenuClick, hasMapsApiKey }: MapScreenProps) {
   const { isDark } = useTheme()
   const mapRef = useRef<google.maps.Map | null>(null)
   const [center, setCenter] = useState(DEFAULT_CENTER)
-  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
 
   const visitedMarkers = useMemo(
     () =>
@@ -53,7 +53,7 @@ export function MapScreen({ records, onMenuClick }: MapScreenProps) {
     )
   }, [])
 
-  if (!apiKey) {
+  if (!hasMapsApiKey) {
     return (
       <div className="flex h-full items-center justify-center p-6 text-center text-sm text-gray-500">
         Google Maps API キーが設定されていません

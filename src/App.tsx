@@ -15,7 +15,7 @@ function AppShell() {
   const [activeTab, setActiveTab] = useState<TabId>('map')
   const [showCreate, setShowCreate] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
-  const mapsKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
+  const mapsKey = (import.meta.env.VITE_GOOGLE_MAPS_API_KEY ?? '').trim()
 
   const handleSave = useCallback(
     async (payload: Parameters<typeof createRecord>[0]) => {
@@ -40,7 +40,11 @@ function AppShell() {
     <>
       <main className="relative h-full overflow-hidden">
         {activeTab === 'map' ? (
-          <MapScreen records={records} onMenuClick={() => setMenuOpen(true)} />
+          <MapScreen
+            records={records}
+            onMenuClick={() => setMenuOpen(true)}
+            hasMapsApiKey={Boolean(mapsKey)}
+          />
         ) : (
           <RecordsScreen records={records} loading={recordsLoading} />
         )}
@@ -84,11 +88,13 @@ function AppShell() {
     </>
   )
 
-  if (mapsKey) {
-    return <LoadScript googleMapsApiKey={mapsKey}>{content}</LoadScript>
-  }
-
-  return content
+  return mapsKey ? (
+    <LoadScript id="guilder-google-map-script" googleMapsApiKey={mapsKey}>
+      {content}
+    </LoadScript>
+  ) : (
+    content
+  )
 }
 
 export default function App() {
