@@ -1,6 +1,37 @@
+type GeocodingAddressComponent = {
+  long_name: string
+  short_name: string
+  types: string[]
+}
+
+type GeocodingResult = {
+  formatted_address: string
+  address_components: GeocodingAddressComponent[]
+}
+
+function pickComponent(
+  components: GeocodingAddressComponent[],
+  type: string,
+): string | null {
+  return components.find((c) => c.types.includes(type))?.long_name ?? null
+}
+
+function toJapanesePlaceName(result: GeocodingResult): string {
+  const components = result.address_components
+  const prefecture = pickComponent(components, 'administrative_area_level_1') ?? ''
+  const city =
+    pickComponent(components, 'locality') ??
+    pickComponent(components, 'administrative_area_level_2') ??
+    pickComponent(components, 'sublocality_level_1') ??
+    ''
+
+  const name = `${prefecture}${city}`.trim()
+  return name || result.formatted_address
+}
+
 export async function reverseGeocode(lat: number, lng: number): Promise<string> {
-  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
-  if (!apiKey) return `${lat.toFixed(4)}, ${lng.toFixed(4)}`
+  const apiKey = (import.meta.env.VITE_GOOGLE_MAPS_API_KEY ?? '').trim()
+  if (!apiKey) return '現在地を特定できませんでした'
 
   try {
     const url = new URL('https://maps.googleapis.com/maps/api/geocode/json')
@@ -9,12 +40,13 @@ export async function reverseGeocode(lat: number, lng: number): Promise<string> 
     url.searchParams.set('language', 'ja')
 
     const res = await fetch(url.toString())
-    const data = (await res.json()) as {
-      results?: { formatted_address: string }[]
-    }
-    return data.results?.[0]?.formatted_address ?? `${lat.toFixed(4)}, ${lng.toFixed(4)}`
+    const data = (await res.json()) as { results?: GeocodingResult[] }
+
+    const topResult = data.results?.[0]
+    if (!topResult) return '現在地を特定できませんでした'
+    return toJapanesePlaceName(topResult)
   } catch {
-    return `${lat.toFixed(4)}, ${lng.toFixed(4)}`
+    return '現在地を特定できませんでした'
   }
 }
 
