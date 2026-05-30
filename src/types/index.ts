@@ -8,6 +8,7 @@ export interface Record {
   latitude: number | null
   longitude: number | null
   created_at: string
+  visibility: 'private' | 'guild' | 'public'
 }
 
 export interface UserProfile {

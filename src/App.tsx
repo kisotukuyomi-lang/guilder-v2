@@ -18,7 +18,15 @@ function AppShell() {
   const mapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ''
 
   const handleSave = useCallback(
-    async (payload: Parameters<typeof createRecord>[0]) => {
+    async (payload: {
+      photos: string[]
+      memo: string | null
+      story: string | null
+      location_name: string | null
+      latitude: number | null
+      longitude: number | null
+      visibility: 'private' | 'guild' | 'public'
+    }) => {
       await createRecord(payload)
     },
     [createRecord],

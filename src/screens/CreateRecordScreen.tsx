@@ -16,6 +16,7 @@ interface CreateRecordScreenProps {
     location_name: string | null
     latitude: number | null
     longitude: number | null
+    visibility: 'private' | 'guild' | 'public'
   }) => Promise<void>
 }
 
@@ -37,6 +38,9 @@ export function CreateRecordScreen({ onClose, onSaved, onSave }: CreateRecordScr
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const geminiApiKey = (import.meta.env.VITE_GEMINI_API_KEY ?? '').trim()
+  const [savedPhotoUrls, setSavedPhotoUrls] = useState<string[]>([])
+  const [showVisibilitySheet, setShowVisibilitySheet] = useState(false)
+  const [visibility, setVisibility] = useState<'private' | 'guild' | 'public'>('private')
 
   useEffect(() => {
     void (async () => {
@@ -121,16 +125,8 @@ export function CreateRecordScreen({ onClose, onSaved, onSave }: CreateRecordScr
         user.id,
         photos.map((p) => p.file),
       )
-      await onSave({
-        photos: photoUrls,
-        memo: memo || null,
-        story: story || null,
-        location_name: location?.locationName ?? null,
-        latitude: location?.lat ?? null,
-        longitude: location?.lng ?? null,
-      })
-      onSaved()
-      onClose()
+      setSavedPhotoUrls(photoUrls)
+      setShowVisibilitySheet(true)
     } catch (err) {
       setError(err instanceof Error ? err.message : '保存に失敗しました')
     } finally {
@@ -138,13 +134,23 @@ export function CreateRecordScreen({ onClose, onSaved, onSave }: CreateRecordScr
     }
   }
 
-  const shareToX = () => {
-    const text = [story, location?.locationName].filter(Boolean).join('\n\n')
-    window.open(
-      `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`,
-      '_blank',
-      'noopener,noreferrer',
-    )
+  const handleConfirmSave = async () => {
+    try {
+      await onSave({
+        photos: savedPhotoUrls,
+        memo: memo || null,
+        story: story || null,
+        location_name: location?.locationName ?? null,
+        latitude: location?.lat ?? null,
+        longitude: location?.lng ?? null,
+        visibility,
+      })
+      setShowVisibilitySheet(false)
+      onSaved()
+      onClose()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '保存に失敗しました')
+    }
   }
 
   return (
@@ -256,16 +262,59 @@ export function CreateRecordScreen({ onClose, onSaved, onSave }: CreateRecordScr
           >
             {saving ? 'Saving...' : 'Save Record'}
           </button>
-          <button
-            type="button"
-            onClick={shareToX}
-            disabled={!story}
-            className="w-full rounded-xl bg-black py-3.5 text-sm font-semibold text-white disabled:opacity-40 dark:bg-white dark:text-black"
-          >
-            Share to X
-          </button>
         </div>
       </div>
+
+      {showVisibilitySheet && (
+        <div className="fixed inset-0 z-50 flex items-end">
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setShowVisibilitySheet(false)}
+          />
+          <div className="relative w-full rounded-t-3xl bg-guilder-bg px-5 pb-10 pt-4 dark:bg-guilder-dark-bg">
+            <div className="mx-auto mb-6 h-1 w-10 rounded-full bg-gray-300 dark:bg-gray-600" />
+            <h2 className="mb-1 text-center text-xl font-bold">この記録を公開しますか？</h2>
+            <p className="mb-6 text-center text-sm text-gray-500">後からいつでも変更できます</p>
+
+            <div className="mb-6 space-y-3">
+              {([
+                { value: 'private', label: 'Private', desc: '自分だけが見られる' },
+                { value: 'guild', label: 'Guild', desc: 'ギルドメンバーだけが見られる' },
+                { value: 'public', label: 'Public', desc: '世界中の冒険者に公開される' },
+              ] as const).map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setVisibility(opt.value)}
+                  className={`w-full rounded-2xl border-2 px-4 py-4 text-left transition-colors ${
+                    visibility === opt.value
+                      ? 'border-gold bg-gold/5'
+                      : 'border-guilder-border dark:border-guilder-dark-border'
+                  }`}
+                >
+                  <p className="font-semibold">{opt.label}</p>
+                  <p className="text-sm text-gray-500">{opt.desc}</p>
+                </button>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => void handleConfirmSave()}
+              className="w-full rounded-xl bg-gold py-3.5 text-sm font-semibold text-white"
+            >
+              保存する
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowVisibilitySheet(false)}
+              className="mt-3 w-full py-2 text-sm text-gray-500"
+            >
+              キャンセル
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
