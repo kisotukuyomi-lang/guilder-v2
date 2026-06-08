@@ -41,6 +41,18 @@ export function CreateRecordScreen({ onClose, onSaved, onSave }: CreateRecordScr
   const [savedPhotoUrls, setSavedPhotoUrls] = useState<string[]>([])
   const [showVisibilitySheet, setShowVisibilitySheet] = useState(false)
   const [visibility, setVisibility] = useState<'private' | 'guild' | 'public'>('private')
+  const [toastState, setToastState] = useState<'hidden' | 'visible' | 'leaving'>('hidden')
+
+  useEffect(() => {
+    if (toastState === 'visible') {
+      const fadeTimer = setTimeout(() => setToastState('leaving'), 2000)
+      return () => clearTimeout(fadeTimer)
+    }
+    if (toastState === 'leaving') {
+      const hideTimer = setTimeout(() => setToastState('hidden'), 400)
+      return () => clearTimeout(hideTimer)
+    }
+  }, [toastState])
 
   useEffect(() => {
     void (async () => {
@@ -147,7 +159,11 @@ export function CreateRecordScreen({ onClose, onSaved, onSave }: CreateRecordScr
       })
       setShowVisibilitySheet(false)
       onSaved()
-      onClose()
+      setToastState('visible')
+      // onClose()は2秒後に呼ぶ
+      setTimeout(() => {
+        onClose()
+      }, 2400)
     } catch (err) {
       setError(err instanceof Error ? err.message : '保存に失敗しました')
     }
@@ -155,6 +171,34 @@ export function CreateRecordScreen({ onClose, onSaved, onSave }: CreateRecordScr
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-guilder-bg dark:bg-guilder-dark-bg">
+      {toastState !== 'hidden' && (
+        <div
+          className="fixed left-1/2 top-0 z-[60]"
+          style={{
+            animation:
+              toastState === 'leaving'
+                ? 'guilder-toast-out 0.4s ease forwards'
+                : 'guilder-toast-in 0.4s ease forwards',
+          }}
+        >
+          <div
+            className="mt-4 rounded-full px-6 py-3 text-sm font-bold text-white shadow-lg"
+            style={{ backgroundColor: '#C9A84C' }}
+          >
+            ✦ Memory saved.
+          </div>
+        </div>
+      )}
+      <style>{`
+        @keyframes guilder-toast-in {
+          from { transform: translate(-50%, -150%); opacity: 0; }
+          to { transform: translate(-50%, 0); opacity: 1; }
+        }
+        @keyframes guilder-toast-out {
+          from { transform: translate(-50%, 0); opacity: 1; }
+          to { transform: translate(-50%, -150%); opacity: 0; }
+        }
+      `}</style>
       <header className="relative flex shrink-0 items-center justify-center border-b border-guilder-border px-4 py-4 dark:border-guilder-dark-border">
         <button
           type="button"
