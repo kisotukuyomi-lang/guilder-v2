@@ -1,21 +1,17 @@
 import { useCallback, useState } from 'react'
-import { LoadScript } from '@react-google-maps/api'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { TabBar, type TabId } from './components/TabBar'
 import { useRecords } from './hooks/useRecords'
 import { AuthScreen } from './screens/AuthScreen'
 import { CreateRecordScreen } from './screens/CreateRecordScreen'
-import { MapScreen } from './screens/MapScreen'
 import { RecordsScreen } from './screens/RecordsScreen'
 
 function AppShell() {
-  const { user, loading, signOut } = useAuth()
+  const { user, loading } = useAuth()
   const { records, loading: recordsLoading, createRecord, fetchRecords } = useRecords()
-  const [activeTab, setActiveTab] = useState<TabId>('map')
+  const [activeTab, setActiveTab] = useState<TabId>('records')
   const [showCreate, setShowCreate] = useState(false)
-  const [menuOpen, setMenuOpen] = useState(false)
-  const mapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ''
 
   const handleSave = useCallback(
     async (payload: {
@@ -47,15 +43,7 @@ function AppShell() {
   const content = (
     <>
       <main className="relative h-full overflow-hidden">
-        {activeTab === 'map' ? (
-          <MapScreen
-            records={records}
-            onMenuClick={() => setMenuOpen(true)}
-            hasMapsApiKey={Boolean(mapsApiKey)}
-          />
-        ) : (
-          <RecordsScreen records={records} loading={recordsLoading} />
-        )}
+        <RecordsScreen records={records} loading={recordsLoading} />
       </main>
 
       <TabBar
@@ -71,41 +59,10 @@ function AppShell() {
           onSave={handleSave}
         />
       )}
-
-      {menuOpen && (
-        <div className="fixed inset-0 z-50 flex">
-          <button
-            type="button"
-            className="flex-1 bg-black/40"
-            onClick={() => setMenuOpen(false)}
-            aria-label="Close menu"
-          />
-          <aside className="w-64 bg-guilder-bg p-6 shadow-xl dark:bg-guilder-dark-bg">
-            <h2 className="mb-6 text-lg font-bold tracking-[0.2em] text-gold">GUILDER</h2>
-            <p className="mb-4 truncate text-sm text-gray-500">{user.email}</p>
-            <button
-              type="button"
-              onClick={() => void signOut()}
-              className="w-full rounded-xl border border-guilder-border py-2 text-sm dark:border-guilder-dark-border"
-            >
-              ログアウト
-            </button>
-          </aside>
-        </div>
-      )}
     </>
   )
 
-  return mapsApiKey ? (
-    <LoadScript
-      id="guilder-google-map-script"
-      googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ''}
-    >
-      {content}
-    </LoadScript>
-  ) : (
-    content
-  )
+  return content
 }
 
 export default function App() {

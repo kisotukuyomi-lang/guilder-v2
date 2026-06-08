@@ -1,6 +1,6 @@
-import { MapTabIcon, PlusIcon, RecordsTabIcon } from './icons'
+import { PlusIcon, RecordsTabIcon } from './icons'
 
-export type TabId = 'map' | 'records'
+export type TabId = 'records'
 
 interface TabBarProps {
   activeTab: TabId
@@ -12,17 +12,6 @@ export function TabBar({ activeTab, onTabChange, onCreate }: TabBarProps) {
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-guilder-border bg-guilder-bg pb-[env(safe-area-inset-bottom)] dark:border-guilder-dark-border dark:bg-guilder-dark-bg">
       <div className="relative mx-auto flex h-[72px] max-w-lg items-end justify-around px-6">
-        <button
-          type="button"
-          onClick={() => onTabChange('map')}
-          className={`mb-3 flex flex-col items-center gap-1 text-xs ${
-            activeTab === 'map' ? 'text-gold' : 'text-gray-400'
-          }`}
-        >
-          <MapTabIcon size={22} />
-          <span>Map</span>
-        </button>
-
         <button
           type="button"
           onClick={onCreate}
