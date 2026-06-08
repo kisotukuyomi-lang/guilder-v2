@@ -52,7 +52,6 @@ export function CreateRecordScreen({ onClose, onSaved, onSave }: CreateRecordScr
   const [generating, setGenerating] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const geminiApiKey = (import.meta.env.VITE_GEMINI_API_KEY ?? '').trim()
   const [savedPhotoUrls, setSavedPhotoUrls] = useState<string[]>([])
   const [showVisibilitySheet, setShowVisibilitySheet] = useState(false)
   const [visibility, setVisibility] = useState<'private' | 'guild' | 'public'>('private')
@@ -119,17 +118,12 @@ export function CreateRecordScreen({ onClose, onSaved, onSave }: CreateRecordScr
       setError('写真を1枚以上追加してください')
       return
     }
-    if (!geminiApiKey) {
-      setError('VITE_GEMINI_API_KEY が設定されていません')
-      return
-    }
     setError(null)
     setGenerating(true)
     try {
       const text = await generateStory(
         location?.locationName ?? '不明な場所',
         memo,
-        geminiApiKey,
       )
       setStory(text)
     } catch (err) {
