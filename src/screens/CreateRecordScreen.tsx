@@ -26,6 +26,21 @@ interface PhotoItem {
   preview: string
 }
 
+function getGenerateErrorMessage(err: unknown): string {
+  const raw = err instanceof Error ? err.message : ''
+  let code: number | undefined
+  try {
+    code = (JSON.parse(raw) as { error?: { code?: number } }).error?.code
+  } catch {
+    code = undefined
+  }
+  const apiErrorCodes = [500, 429, 503]
+  if ((code !== undefined && apiErrorCodes.includes(code)) || /\b(500|429|503)\b/.test(raw)) {
+    return 'AIが混み合っています。しばらくしてから再度お試しください'
+  }
+  return '生成に失敗しました。再度お試しください'
+}
+
 export function CreateRecordScreen({ onClose, onSaved, onSave }: CreateRecordScreenProps) {
   const { user } = useAuth()
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -118,7 +133,7 @@ export function CreateRecordScreen({ onClose, onSaved, onSave }: CreateRecordScr
       )
       setStory(text)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'AI生成に失敗しました')
+      setError(getGenerateErrorMessage(err))
     } finally {
       setGenerating(false)
     }
