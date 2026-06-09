@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react'
+import exifr from 'exifr'
 import { CloseIcon, UploadIcon } from '../components/icons'
 import { useAuth } from '../contexts/AuthContext'
 import { generateStory } from '../lib/gemini'
@@ -77,7 +78,7 @@ export function CreateRecordScreen({ onClose, onSaved, onSave }: CreateRecordScr
         const locationName = await reverseGeocode(lat, lng)
         setLocation({ lat, lng, locationName })
       } catch {
-        setLocation({ lat: 35.6812, lng: 139.7671, locationName: '位置情報を取得できませんでした' })
+        setLocation({ lat: null, lng: null, locationName: '現在地を特定できませんでした' })
       } finally {
         setLocating(false)
       }
@@ -85,7 +86,7 @@ export function CreateRecordScreen({ onClose, onSaved, onSave }: CreateRecordScr
   }, [])
 
   const addPhotos = useCallback(
-    (e: ChangeEvent<HTMLInputElement>) => {
+    async (e: ChangeEvent<HTMLInputElement>) => {
       const files = Array.from(e.target.files ?? [])
       if (!files.length) return
 
@@ -100,6 +101,24 @@ export function CreateRecordScreen({ onClose, onSaved, onSave }: CreateRecordScr
           preview: URL.createObjectURL(file),
         })),
       ])
+
+      // 最初の1枚からEXIFを読み取る
+      try {
+        const exif = await exifr.parse(toAdd[0], {
+          pick: ['GPSLatitude', 'GPSLongitude', 'DateTimeOriginal'],
+        })
+        if (exif?.GPSLatitude && exif?.GPSLongitude) {
+          const lat = exif.GPSLatitude
+          const lng = exif.GPSLongitude
+          const locationName = await reverseGeocode(lat, lng)
+          setLocation({ lat, lng, locationName })
+          setLocating(false)
+        }
+        // EXIF日時があればcreatedAtに使う（将来用にstateだけ用意）
+      } catch {
+        // EXIFが読めない場合は現在地GPSをそのまま使う
+      }
+
       e.target.value = ''
     },
     [photos.length],

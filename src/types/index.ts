@@ -28,7 +28,7 @@ export interface NearbySpot {
 }
 
 export interface GeoPosition {
-  lat: number
-  lng: number
+  lat: number | null
+  lng: number | null
   locationName: string
 }
