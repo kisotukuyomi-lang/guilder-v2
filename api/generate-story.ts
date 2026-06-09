@@ -36,8 +36,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     )
     const data = await response.json()
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
-    return res.status(200).json({ result: text })
+    const raw = data.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+
+    // コードブロックやMarkdownを除去
+    const cleaned = raw.replace(/```json|```/g, '').trim()
+
+    let parsed: { title?: string; story?: string; hashtags?: string[] }
+    try {
+      parsed = JSON.parse(cleaned)
+    } catch {
+      return res.status(200).json({ result: raw })
+    }
+
+    const title = parsed.title ?? ''
+    const story = parsed.story ?? ''
+    const tags = (parsed.hashtags ?? []).join(' ')
+    const result = `${title}\n\n${story}\n\n${tags}`
+
+    return res.status(200).json({ result })
   } catch {
     return res.status(500).json({ error: 'Generation failed' })
   }
