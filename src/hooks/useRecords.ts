@@ -38,13 +38,13 @@ export function useRecords() {
   const createRecord = useCallback(
     async (payload: Omit<Record, 'id' | 'user_id' | 'created_at'>) => {
       if (!user) throw new Error('Not authenticated')
-      console.log('createRecord called', { payload, userId: user.id })
+
       const { data, error } = await supabase
         .from('records')
         .insert({ ...payload, user_id: user.id })
         .select()
         .single()
-      console.log('supabase result', { data, error })
+
       if (error) throw error
       await fetchRecords()
       return data as Record
