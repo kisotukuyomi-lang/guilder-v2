@@ -1,11 +1,20 @@
+export type GenerateStyle = 'emotive' | 'affirming' | 'cool' | 'gossip'
+
+export interface GenerateResult {
+  title: string
+  story: string
+  hashtags: string[]
+}
+
 export async function generateStory(
-  locationName: string,
+  locationName: string | null,
   memo: string,
-): Promise<string> {
+  style: GenerateStyle = 'emotive',
+): Promise<GenerateResult> {
   const response = await fetch('/api/generate-story', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ locationName, memo })
+    body: JSON.stringify({ locationName, memo, style }),
   })
 
   if (!response.ok) {
@@ -14,5 +23,10 @@ export async function generateStory(
   }
 
   const data = await response.json()
-  return data.result
+
+  return {
+    title: data.title ?? '',
+    story: data.story ?? '',
+    hashtags: data.hashtags ?? [],
+  }
 }

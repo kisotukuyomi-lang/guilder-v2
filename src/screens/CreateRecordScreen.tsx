@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'reac
 import exifr from 'exifr'
 import { CloseIcon, UploadIcon } from '../components/icons'
 import { useAuth } from '../contexts/AuthContext'
-import { generateStory } from '../lib/gemini'
+import { generateStory, type GenerateStyle, type GenerateResult } from '../lib/gemini'
 import { getCurrentPosition, reverseGeocode } from '../lib/geocoding'
 import { uploadPhotos } from '../hooks/useRecords'
 import type { GeoPosition } from '../types'
@@ -57,6 +57,8 @@ export function CreateRecordScreen({ onClose, onSaved, onSave }: CreateRecordScr
   const [showVisibilitySheet, setShowVisibilitySheet] = useState(false)
   const [visibility, setVisibility] = useState<'private' | 'guild' | 'public'>('private')
   const [toastState, setToastState] = useState<'hidden' | 'visible' | 'leaving'>('hidden')
+  const [style, setStyle] = useState<GenerateStyle>('emotive')
+  const [result, setResult] = useState<GenerateResult | null>(null)
 
   useEffect(() => {
     if (toastState === 'visible') {
@@ -133,18 +135,16 @@ export function CreateRecordScreen({ onClose, onSaved, onSave }: CreateRecordScr
   }, [])
 
   const handleGenerate = async () => {
-    if (!photos.length) {
-      setError('写真を1枚以上追加してください')
-      return
-    }
     setError(null)
     setGenerating(true)
     try {
-      const text = await generateStory(
-        location?.locationName ?? '不明な場所',
+      const generated = await generateStory(
+        location?.locationName ?? null,
         memo,
+        style,
       )
-      setStory(text)
+      setResult(generated)
+      setStory(`${generated.title}\n\n${generated.story}\n\n${generated.hashtags.join(' ')}`)
     } catch (err) {
       setError(getGenerateErrorMessage(err))
     } finally {
@@ -303,6 +303,29 @@ export function CreateRecordScreen({ onClose, onSaved, onSave }: CreateRecordScr
         </section>
 
         <section className="mb-6">
+          <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
+            {(
+              [
+                { value: 'emotive', label: 'エモい' },
+                { value: 'affirming', label: '自己肯定' },
+                { value: 'cool', label: 'クール' },
+                { value: 'gossip', label: 'ゴシップ' },
+              ] as const
+            ).map((s) => (
+              <button
+                key={s.value}
+                type="button"
+                onClick={() => setStyle(s.value)}
+                className={`shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                  style === s.value
+                    ? 'bg-gold text-white'
+                    : 'border border-guilder-border text-gray-500 dark:border-guilder-dark-border'
+                }`}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
           <div className="mb-2 flex items-center justify-between">
             <span className="text-sm font-medium">AI Story</span>
             <button
@@ -314,13 +337,32 @@ export function CreateRecordScreen({ onClose, onSaved, onSave }: CreateRecordScr
               ✦ {generating ? 'Generating...' : 'Generate'}
             </button>
           </div>
-          <textarea
-            value={story}
-            onChange={(e) => setStory(e.target.value)}
-            placeholder="Generate or write your story..."
-            rows={5}
-            className="w-full resize-none rounded-xl border border-guilder-border bg-transparent px-4 py-3 text-sm outline-none focus:border-gold dark:border-guilder-dark-border"
-          />
+          {result ? (
+            <div className="rounded-xl border border-guilder-border bg-transparent px-4 py-3 dark:border-guilder-dark-border">
+              <p className="mb-1 text-base font-bold">{result.title}</p>
+              <p className="mb-2 text-sm leading-relaxed text-gray-700 dark:text-gray-300">
+                {result.story}
+              </p>
+              <p className="text-xs text-gold">
+                {result.hashtags.map((tag) => `#${tag.replace(/^#/, '')}`).join(' ')}
+              </p>
+              <button
+                type="button"
+                onClick={() => setResult(null)}
+                className="mt-2 text-xs text-gray-400 underline"
+              >
+                編集する
+              </button>
+            </div>
+          ) : (
+            <textarea
+              value={story}
+              onChange={(e) => setStory(e.target.value)}
+              placeholder="Generate or write your story..."
+              rows={5}
+              className="w-full resize-none rounded-xl border border-guilder-border bg-transparent px-4 py-3 text-sm outline-none focus:border-gold dark:border-guilder-dark-border"
+            />
+          )}
         </section>
 
         {error && <p className="mb-4 text-sm text-red-500">{error}</p>}
