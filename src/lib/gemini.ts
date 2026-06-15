@@ -11,7 +11,7 @@ export async function generateStory(
   memo: string,
   style: GenerateStyle = 'emotive',
 ): Promise<GenerateResult> {
-  const response = await fetch('/api/story', {
+  const response = await fetch('/api/story-v2', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ locationName, memo, style }),
