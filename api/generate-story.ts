@@ -118,6 +118,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const data = await response.json()
     const raw = data.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+    console.log('raw response:', raw)
     const cleaned = raw.replace(/```json|```/g, '').trim()
 
     let parsed: { title?: string; story?: string; hashtags?: string[] }
