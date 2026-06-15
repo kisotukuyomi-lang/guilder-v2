@@ -103,6 +103,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   )
 
   try {
+    console.log('calling Gemini with prompt length:', prompt.length)
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
       {
@@ -119,6 +120,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     )
 
     const data = await response.json()
+    console.log('Gemini status:', response.status)
+    console.log('Gemini data:', JSON.stringify(data).slice(0, 500))
     const raw = data.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
     console.log('raw response:', raw)
     const cleaned = raw.replace(/```json|```/g, '').trim()
@@ -127,7 +130,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     try {
       parsed = JSON.parse(cleaned)
     } catch {
-      return res.status(200).json({ result: raw })
+      return res.status(200).json({
+        title: '',
+        story: raw,
+        hashtags: [],
+      })
     }
 
     return res.status(200).json({
