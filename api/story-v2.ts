@@ -80,6 +80,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
+  console.log('request body:', JSON.stringify(req.body))
 
   const apiKey = process.env.GEMINI_API_KEY
   if (!apiKey) {
