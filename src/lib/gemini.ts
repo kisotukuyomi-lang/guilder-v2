@@ -23,10 +23,27 @@ export async function generateStory(
   }
 
   const data = await response.json()
-
-  return {
-    title: data.title ?? '',
-    story: data.story ?? '',
-    hashtags: data.hashtags ?? [],
+  
+  // result形式・title形式どちらでも対応
+  if (data.title !== undefined) {
+    return {
+      title: data.title ?? '',
+      story: data.story ?? '',
+      hashtags: data.hashtags ?? [],
+    }
+  }
+  
+  // 古いresult形式のフォールバック
+  const raw = data.result ?? ''
+  const cleaned = raw.replace(/```json|```/g, '').trim()
+  try {
+    const parsed = JSON.parse(cleaned)
+    return {
+      title: parsed.title ?? '',
+      story: parsed.story ?? '',
+      hashtags: parsed.hashtags ?? [],
+    }
+  } catch {
+    return { title: '', story: raw, hashtags: [] }
   }
 }
